@@ -50,10 +50,16 @@ jobs:
         run: cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS
 
       - name: Collect artifacts
+        shell: pwsh
         run: |
-          mkdir artifacts/windows
-          Get-ChildItem -Path build -Recurse -Filter "VibeVerb.vst3" | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination artifacts/windows/ -Recurse
+          New-Item -ItemType Directory -Force -Path artifacts/windows | Out-Null
+          $vst3 = Get-ChildItem -Path build -Recurse -Directory -Filter "VibeVerb.vst3" | Select-Object -First 1
+          if ($vst3) {
+            Copy-Item -Path $vst3.FullName -Destination artifacts/windows/ -Recurse -Force
+          } else {
+            Write-Error "VibeVerb.vst3 not found!"
+            Get-ChildItem -Path build -Recurse -Directory | Where-Object { $_.Name -like "*.vst3" }
+            exit 1
           }
 
       - uses: actions/upload-artifact@v4
