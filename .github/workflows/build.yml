@@ -1,0 +1,62 @@
+name: Build VibeVerb
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # allow manual trigger
+
+jobs:
+  # ── macOS (native) ──────────────────────────────
+  build-macos:
+    name: macOS VST3
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(sysctl -n hw.ncpu)
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p artifacts/macos
+          cp build/VibeVerb_artefacts/Release/VST3/VibeVerb.vst3 artifacts/macos/ || true
+          find build -name "VibeVerb.vst3" -exec cp -r {} artifacts/macos/ \; 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VibeVerb-macOS
+          path: artifacts/macos/
+
+  # ── Windows (MSVC) ──────────────────────────────
+  build-windows:
+    name: Windows VST3
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS
+
+      - name: Collect artifacts
+        run: |
+          mkdir artifacts/windows
+          Get-ChildItem -Path build -Recurse -Filter "VibeVerb.vst3" | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination artifacts/windows/ -Recurse
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VibeVerb-Windows
+          path: artifacts/windows/

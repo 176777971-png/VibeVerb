@@ -1,0 +1,10 @@
+/VibeVerb_artefacts/
+/build/
+/build-windows/
+/cmake-build-*/
+.DS_Store
+*.vst3
+*.dll
+*.so
+*.exe
+Thumbs.db
